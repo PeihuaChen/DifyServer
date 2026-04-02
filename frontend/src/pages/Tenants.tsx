@@ -16,6 +16,8 @@ const Tenants: React.FC = () => {
     pageSize: 10,
     total: 0,
   });
+  const paginationRef = React.useRef(pagination);
+  paginationRef.current = pagination;
 
   const columns = [
     { title: '名称', dataIndex: 'Name', key: 'name' },
@@ -35,19 +37,21 @@ const Tenants: React.FC = () => {
     },
   ];
 
-  const fetchTenants = React.useCallback(async (page: number = 1) => {
+  const fetchTenants = React.useCallback(async (page: number = 1, pageSize: number = 10) => {
     setLoading(true);
     try {
-      const response = await tenantApi.getTenants(page);
-      setTenants(response.data.data);
+      const response = await tenantApi.getTenants(page, pageSize);
+      setTenants(response.data?.data || []);
       setPagination(prev => ({
         ...prev,
-        current: response.data.page,
-        total: response.data.total,
+        current: response.data?.page || 1,
+        pageSize: pageSize,
+        total: response.data?.total || 0,
       }));
     } catch (error) {
       message.error('获取工作空间列表失败');
       console.error('Error:', error);
+      setTenants([]);
     }
     setLoading(false);
   }, []);
@@ -66,7 +70,7 @@ const Tenants: React.FC = () => {
       message.success('添加工作空间成功');
       setVisible(false);
       form.resetFields();
-      fetchTenants();
+      fetchTenants(paginationRef.current.current, paginationRef.current.pageSize);
     } catch (error) {
       message.error('添加工作空间失败');
     }
@@ -101,7 +105,7 @@ const Tenants: React.FC = () => {
               current: page,
               pageSize: pageSize || 10
             }));
-            fetchTenants(page);
+            fetchTenants(page, pageSize || 10);
           }
         }}
       />

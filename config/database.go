@@ -20,17 +20,20 @@ type Config struct {
 var GlobalConfig Config
 
 func LoadConfig() error {
-	//获取程序执行路径
-	exe, err := os.Executable()
-	if err != nil {
-		return err
-	}
-	configPath := filepath.Join(filepath.Dir(exe), "config.yaml")
-
-	// 读取配置文件
+	// 首先尝试在当前工作目录读取 config.yaml
+	configPath := "config.yaml"
 	data, err := os.ReadFile(configPath)
 	if err != nil {
-		return err
+		// 如果失败，尝试在程序执行路径读取
+		exe, err := os.Executable()
+		if err != nil {
+			return err
+		}
+		configPath = filepath.Join(filepath.Dir(exe), "config.yaml")
+		data, err = os.ReadFile(configPath)
+		if err != nil {
+			return err
+		}
 	}
 
 	// 解析配置文件

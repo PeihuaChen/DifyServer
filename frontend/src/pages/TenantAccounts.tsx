@@ -26,39 +26,79 @@ const TenantAccounts: React.FC = () => {
     pageSize: 10,
     total: 0,
   });
+  const paginationRef = React.useRef(pagination);
+  paginationRef.current = pagination;
 
-  const fetchJoins = React.useCallback(async (page: number = 1) => {
+  const fetchJoins = React.useCallback(async (page: number = 1, pageSize: number = 10) => {
     setLoading(true);
     try {
-      const response = await tenantAccountApi.listTenantAccounts(page);
-      setJoins(response.data.data);
+      const response = await tenantAccountApi.listTenantAccounts(page, pageSize);
+      setJoins(response.data?.data || []);
       setPagination(prev => ({
         ...prev,
-        current: response.data.page,
-        total: response.data.total,
+        current: response.data?.page || 1,
+        pageSize: pageSize,
+        total: response.data?.total || 0,
       }));
     } catch (error) {
       message.error('获取关联关系列表失败');
       console.error('Error:', error);
+      setJoins([]);
     }
     setLoading(false);
   }, []);
 
   const fetchAccounts = async () => {
     try {
-      const response = await accountApi.getAccounts(1);
-      setAccounts(response.data.data);
+      // 尝试获取全部用户数据
+      let allAccounts: Account[] = [];
+      let page = 1;
+      let hasMore = true;
+      
+      while (hasMore) {
+        const response = await accountApi.getAccounts(page, 100);
+        const accounts = response.data?.data || [];
+        allAccounts = [...allAccounts, ...accounts];
+        
+        // 检查是否还有更多数据
+        if (accounts.length < 100) {
+          hasMore = false;
+        } else {
+          page++;
+        }
+      }
+      
+      setAccounts(allAccounts);
     } catch (error) {
       message.error('获取用户列表失败');
+      setAccounts([]);
     }
   };
 
   const fetchTenants = async () => {
     try {
-      const response = await tenantApi.getTenants(1);
-      setTenants(response.data.data);
+      // 尝试获取全部工作空间数据
+      let allTenants: Tenant[] = [];
+      let page = 1;
+      let hasMore = true;
+      
+      while (hasMore) {
+        const response = await tenantApi.getTenants(page, 100);
+        const tenants = response.data?.data || [];
+        allTenants = [...allTenants, ...tenants];
+        
+        // 检查是否还有更多数据
+        if (tenants.length < 100) {
+          hasMore = false;
+        } else {
+          page++;
+        }
+      }
+      
+      setTenants(allTenants);
     } catch (error) {
       message.error('获取工作空间列表失败');
+      setTenants([]);
     }
   };
 
@@ -130,7 +170,7 @@ const TenantAccounts: React.FC = () => {
       message.success('添加关联关系成功');
       setVisible(false);
       form.resetFields();
-      fetchJoins();
+      fetchJoins(paginationRef.current.current, paginationRef.current.pageSize);
     } catch (error) {
       message.error('添加关联关系失败');
     }
@@ -140,7 +180,7 @@ const TenantAccounts: React.FC = () => {
     try {
       await tenantAccountApi.deleteTenantAccount(accountId, tenantId);
       message.success('删除关联关系成功');
-      fetchJoins();
+      fetchJoins(paginationRef.current.current, paginationRef.current.pageSize);
     } catch (error) {
       message.error('删除关联关系失败');
     }
@@ -155,7 +195,7 @@ const TenantAccounts: React.FC = () => {
         role: newRole
       });
       message.success('更新角色成功');
-      fetchJoins();
+      fetchJoins(paginationRef.current.current, paginationRef.current.pageSize);
     } catch (error) {
       message.error('更新角色失败');
     }
@@ -190,7 +230,7 @@ const TenantAccounts: React.FC = () => {
               current: page,
               pageSize: pageSize || 10
             }));
-            fetchJoins(page);
+            fetchJoins(page, pageSize || 10);
           }
         }}
       />

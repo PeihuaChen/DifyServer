@@ -17,6 +17,8 @@ const Accounts: React.FC = () => {
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string>('');
   const [passwordForm] = Form.useForm();
+  const paginationRef = React.useRef(pagination);
+  paginationRef.current = pagination;
 
   const handleSetPassword = async (values: { password: string }) => {
     try {
@@ -62,19 +64,21 @@ const Accounts: React.FC = () => {
     },
   ];
 
-  const fetchAccounts = React.useCallback(async (page: number = 1) => {
+  const fetchAccounts = React.useCallback(async (page: number = 1, pageSize: number = 10) => {
     setLoading(true);
     try {
-      const response = await accountApi.getAccounts(page);
-      setAccounts(response.data.data);
+      const response = await accountApi.getAccounts(page, pageSize);
+      setAccounts(response.data?.data || []);
       setPagination(prev => ({
         ...prev,
-        current: response.data.page,
-        total: response.data.total,
+        current: response.data?.page || 1,
+        pageSize: pageSize,
+        total: response.data?.total || 0,
       }));
     } catch (error) {
       message.error('获取用户列表失败');
       console.error('Error:', error);
+      setAccounts([]);
     }
     setLoading(false);
   }, []);
@@ -89,7 +93,7 @@ const Accounts: React.FC = () => {
       message.success('添加用户成功');
       setVisible(false);
       form.resetFields();
-      fetchAccounts();
+      fetchAccounts(paginationRef.current.current, paginationRef.current.pageSize);
     } catch (error) {
       message.error('添加用户失败');
     }
@@ -99,7 +103,7 @@ const Accounts: React.FC = () => {
     try {
       await accountApi.deleteAccount(id);
       message.success('删除用户成功');
-      fetchAccounts();
+      fetchAccounts(paginationRef.current.current, paginationRef.current.pageSize);
     } catch (error) {
       message.error('删除用户失败');
     }
@@ -134,7 +138,7 @@ const Accounts: React.FC = () => {
               current: page,
               pageSize: pageSize || 10
             }));
-            fetchAccounts(page);
+            fetchAccounts(page, pageSize || 10);
           }
         }}
       />

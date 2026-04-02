@@ -18,20 +18,24 @@ const Datasets: React.FC = () => {
     pageSize: 10,
     total: 0,
   });
+  const paginationRef = React.useRef(pagination);
+  paginationRef.current = pagination;
 
-  const fetchDatasets = React.useCallback(async (page: number = 1) => {
+  const fetchDatasets = React.useCallback(async (page: number = 1, pageSize: number = 10) => {
     setLoading(true);
     try {
-      const response = await datasetApi.getDatasets(page);
-      setDatasets(response.data.data);
+      const response = await datasetApi.getDatasets(page, pageSize);
+      setDatasets(response.data?.data || []);
       setPagination(prev => ({
         ...prev,
-        current: response.data.page,
-        total: response.data.total,
+        current: response.data?.page || 1,
+        pageSize: pageSize,
+        total: response.data?.total || 0,
       }));
     } catch (error) {
       message.error('获取知识库列表失败');
       console.error('Error:', error);
+      setDatasets([]);
     }
     setLoading(false);
   }, []);
@@ -39,9 +43,10 @@ const Datasets: React.FC = () => {
   const fetchTenants = async () => {
     try {
       const response = await tenantApi.getTenants(1);
-      setTenants(response.data.data);
+      setTenants(response.data?.data || []);
     } catch (error) {
       message.error('获取工作空间列表失败');
+      setTenants([]);
     }
   };
 
@@ -87,7 +92,7 @@ const Datasets: React.FC = () => {
       message.success('添加知识库成功');
       setVisible(false);
       form.resetFields();
-      fetchDatasets();
+      fetchDatasets(paginationRef.current.current, paginationRef.current.pageSize);
     } catch (error) {
       message.error('添加知识库失败');
     }
@@ -122,7 +127,7 @@ const Datasets: React.FC = () => {
               current: page,
               pageSize: pageSize || 10
             }));
-            fetchDatasets(page);
+            fetchDatasets(page, pageSize || 10);
           }
         }}
       />

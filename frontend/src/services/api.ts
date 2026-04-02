@@ -1,10 +1,8 @@
 import axios from 'axios';
 
-// const api = axios.create({
-//     baseURL: 'http://localhost:8080/api'
-// });
+// 使用完整URL直接调用后端
 const api = axios.create({
-    baseURL:'/api'
+    baseURL: 'http://localhost:8080/api'
 });
 
 // 添加请求拦截器
@@ -32,8 +30,8 @@ api.interceptors.response.use(
 export const accountApi = {
     login: (data: { email: string; password: string }) =>
         api.post('/login.json', data),
-    getAccounts: (page: number) =>
-        api.get('/accounts.json', { params: { page } }),
+    getAccounts: (page: number, pageSize: number = 10) =>
+        api.get('/accounts.json', { params: { page, page_size: pageSize } }),
     addAccount: (data: { name: string; email: string }) =>
         api.post('/add_account.json', data),
     deleteAccount: (id: string) =>
@@ -43,8 +41,8 @@ export const accountApi = {
 };
 
 export const tenantApi = {
-    getTenants: (page: number) =>
-        api.get('/tenants.json', { params: { page } }),
+    getTenants: (page: number, pageSize: number = 10) =>
+        api.get('/tenants.json', { params: { page, page_size: pageSize } }),
     addTenant: (data: { 
         name: string; 
         plan: 'basic' | 'pro' | 'enterprise';
@@ -54,8 +52,8 @@ export const tenantApi = {
 };
 
 export const datasetApi = {
-    getDatasets: (page: number) =>
-        api.get('/datasets.json', { params: { page } }),
+    getDatasets: (page: number, pageSize: number = 10) =>
+        api.get('/datasets.json', { params: { page, page_size: pageSize } }),
     addDataset: (data: {
         name: string;
         description: string;
@@ -73,8 +71,8 @@ export const datasetApi = {
 };
 
 export const tenantAccountApi = {
-    listTenantAccounts: (page: number) =>
-        api.get('/list_tenant_account.json', { params: { page } }),
+    listTenantAccounts: (page: number, pageSize: number = 10) =>
+        api.get('/list_tenant_account.json', { params: { page, page_size: pageSize } }),
     listByAccount: (accountId: string, page: number) =>
         api.get('/list_tenant_account_by_account.json', { params: { account_id: accountId, page } }),
     listByTenant: (tenantId: string, page: number) =>

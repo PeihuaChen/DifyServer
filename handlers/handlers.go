@@ -23,8 +23,12 @@ func GetAccounts(c *gin.Context) {
 	var accounts []models.Account
 	var total int64
 	pageStr := c.DefaultQuery("page", "1")
+	pageSizeStr := c.DefaultQuery("page_size", "10")
 	page, _ := strconv.Atoi(pageStr)
-	limit := 10
+	limit, _ := strconv.Atoi(pageSizeStr)
+	if limit <= 0 {
+		limit = 10
+	}
 	offset := (page - 1) * limit
 
 	// 先获取总记录数
@@ -76,8 +80,12 @@ func GetTenants(c *gin.Context) {
 	var tenants []models.Tenant
 	var total int64
 	pageStr := c.DefaultQuery("page", "1")
+	pageSizeStr := c.DefaultQuery("page_size", "10")
 	page, _ := strconv.Atoi(pageStr)
-	limit := 10
+	limit, _ := strconv.Atoi(pageSizeStr)
+	if limit <= 0 {
+		limit = 10
+	}
 	offset := (page - 1) * limit
 
 	// 先获取总记录数
@@ -128,8 +136,12 @@ func GetDatasets(c *gin.Context) {
 	var datasets []models.Dataset
 	var total int64
 	pageStr := c.DefaultQuery("page", "1")
+	pageSizeStr := c.DefaultQuery("page_size", "10")
 	page, _ := strconv.Atoi(pageStr)
-	limit := 10
+	limit, _ := strconv.Atoi(pageSizeStr)
+	if limit <= 0 {
+		limit = 10
+	}
 	offset := (page - 1) * limit
 
 	// 先获取总记录数
@@ -230,8 +242,12 @@ func ListTenantAccount(c *gin.Context) {
 	var joins []models.TenantAccountJoin
 	var total int64
 	pageStr := c.DefaultQuery("page", "1")
+	pageSizeStr := c.DefaultQuery("page_size", "10")
 	page, _ := strconv.Atoi(pageStr)
-	limit := 10
+	limit, _ := strconv.Atoi(pageSizeStr)
+	if limit <= 0 {
+		limit = 10
+	}
 	offset := (page - 1) * limit
 
 	// 先获取总记录数

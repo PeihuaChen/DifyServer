@@ -20,10 +20,11 @@ func main() {
 		log.Fatal("数据库连接失败:", err)
 	}
 	r := gin.Default()
+	r.SetTrustedProxies(nil)
 
 	// CORS 配置...
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:3000"},
+		AllowOrigins:     []string{"http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:3001", "http://127.0.0.1:3001", "http://localhost:8080", "http://127.0.0.1:8080"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization", "Access-Control-Allow-Origin"},
 		ExposeHeaders:    []string{"Content-Length"},
@@ -58,10 +59,6 @@ func main() {
 		auth.POST("/del_tenant_account.json", handlers.DelTenantAccount)
 		auth.POST("/update_tenant_account_role.json", handlers.UpdateTenantAccountRole)
 		auth.POST("/set_account_password.json", handlers.SetAccountPassword)
-		//auth.POST("/api/login.json", handlers.Login)
-		if err := r.Run(":8080"); err != nil {
-			log.Fatal("服务启动失败:", err)
-		}
 	}
 
 	if err := r.Run(":8080"); err != nil {

@@ -45,7 +45,7 @@ admins:
 
 1. 克隆仓库：
 ```bash
-git clone https://github.com/weiwhy/DifyServer.git
+git clone https://github.com/PeihuaChen/DifyServer.git
  ```
 
 2. 安装前端依赖：
@@ -56,7 +56,6 @@ npm install
  ```
 
 3. 构建前端：
-4. 
 ```bash
 npm run build
  ```
@@ -65,6 +64,15 @@ npm run build
 ```bash
 go build
  ```
+
+5. 前后端运行
+```bash
+go run main.go
+```
+````bash
+cd frontend
+npm start
+````
 
 ## 截图
 
