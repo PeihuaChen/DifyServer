@@ -15,6 +15,17 @@ type Config struct {
 		DBName   string `yaml:"dbname"`
 	} `yaml:"database"`
 	Admins []string `yaml:"admins"` // 添加管理员邮箱列表
+	Dify   struct {
+		ConsoleAPIURL  string   `yaml:"console_api_url"`
+		AdminEmail     string   `yaml:"admin_email"`
+		AdminPassword  string   `yaml:"admin_password"`
+		DefaultPlugins []string `yaml:"default_plugins"`
+		StoragePath    string   `yaml:"storage_path"`  // Dify storage 路径
+		SSHHost        string   `yaml:"ssh_host"`      // SSH 主机地址（远程写入私钥用）
+		SSHPort        int      `yaml:"ssh_port"`      // SSH 端口
+		SSHUser        string   `yaml:"ssh_user"`      // SSH 用户名
+		SSHPassword    string   `yaml:"ssh_password"`  // SSH 密码
+	} `yaml:"dify"`
 }
 
 var GlobalConfig Config

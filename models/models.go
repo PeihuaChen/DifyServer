@@ -58,3 +58,16 @@ type Dataset struct {
 	CollectionBindingID    string
 	RetrievalModel         string
 }
+
+// PluginInstallation Dify 插件安装记录（只读，用于查询已安装插件）
+type PluginInstallation struct {
+	ID                     string `gorm:"primaryKey" json:"id"`
+	TenantID               string `json:"tenant_id"`
+	PluginID               string `json:"plugin_id"`
+	PluginUniqueIdentifier string `json:"plugin_unique_identifier"`
+	Source                 string `json:"source"`
+}
+
+func (PluginInstallation) TableName() string {
+	return "plugin_installations"
+}

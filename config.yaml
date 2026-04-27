@@ -9,3 +9,20 @@ admins:
   - "admin1@example.com"
   - "admin2@example.com"
   - "admin3@example.com"
+
+# Dify Console API 配置（用于调用插件安装等接口）
+dify:
+  console_api_url: "http://x.x.x.x:5001"  # Dify API 服务地址
+  admin_email: "admin1@example.com"   # 用于登录 Dify 获取 token 的管理员邮箱
+  admin_password: "adminpwd"                         # 管理员密码
+  # 新建 workspace 时自动安装的插件列表（plugin_unique_identifier）
+  # 格式: org/name:version@hash，可从已有 workspace 的插件安装记录中获取
+  default_plugins:
+    - "langgenius/openai_api_compatible:0.0.42@cf508badd3f6c086c137a6034697e0c48a60038783b3c3ed0af2fe55000842e8"
+  # Dify storage 路径（Docker volume 映射到宿主机的路径）
+  storage_path: "映射到宿主机的路径/dify/docker/volumes/app/storage"
+  # SSH 配置（用于远程写入 RSA 私钥到 Dify 服务器）
+  ssh_host: "x.x.x.x"
+  ssh_port: 22
+  ssh_user: "username"      # 填写 SSH 用户名
+  ssh_password: "userpwd"  # 填写 SSH 密码

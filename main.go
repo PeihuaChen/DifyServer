@@ -59,6 +59,8 @@ func main() {
 		auth.POST("/del_tenant_account.json", handlers.DelTenantAccount)
 		auth.POST("/update_tenant_account_role.json", handlers.UpdateTenantAccountRole)
 		auth.POST("/set_account_password.json", handlers.SetAccountPassword)
+		auth.POST("/install_plugins.json", handlers.InstallPlugins)
+		auth.GET("/installed_plugins.json", handlers.ListInstalledPlugins)
 	}
 
 	if err := r.Run(":8080"); err != nil {

@@ -10,6 +10,7 @@ const Tenants: React.FC = () => {
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [loading, setLoading] = useState(false);
   const [visible, setVisible] = useState(false);
+  const [installLoading, setInstallLoading] = useState<string | null>(null);
   const [form] = Form.useForm();
   const [pagination, setPagination] = useState({
     current: 1,
@@ -35,7 +36,36 @@ const Tenants: React.FC = () => {
       key: 'updated_at',
       render: (text: string) => new Date(text).toLocaleString()
     },
+    {
+      title: '操作',
+      key: 'action',
+      render: (_: any, record: Tenant) => (
+        <Button
+          type="link"
+          loading={installLoading === record.ID}
+          onClick={() => handleInstallPlugins(record.ID)}
+        >
+          安装默认插件
+        </Button>
+      ),
+    },
   ];
+
+  const handleInstallPlugins = async (tenantId: string) => {
+    setInstallLoading(tenantId);
+    try {
+      const response = await tenantApi.installPlugins(tenantId);
+      if (response.data?.all_installed) {
+        message.success('默认插件已全部安装完成');
+      } else {
+        message.success(`插件安装任务已提交，task_id: ${response.data?.task_id || '未知'}`);
+      }
+    } catch (error: any) {
+      const errMsg = error.response?.data?.error || '安装插件失败';
+      message.error(errMsg);
+    }
+    setInstallLoading(null);
+  };
 
   const fetchTenants = React.useCallback(async (page: number = 1, pageSize: number = 10) => {
     setLoading(true);

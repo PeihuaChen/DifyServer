@@ -49,6 +49,11 @@ export const tenantApi = {
         status: string;
     }) =>
         api.post('/add_tenant.json', data),
+    installPlugins: (tenantId: string, pluginIdentifiers?: string[]) =>
+        api.post('/install_plugins.json', { 
+            tenant_id: tenantId, 
+            plugin_identifiers: pluginIdentifiers || [] 
+        }),
 };
 
 export const datasetApi = {

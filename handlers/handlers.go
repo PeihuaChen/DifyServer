@@ -7,6 +7,7 @@ import (
 	"difyserver/config"
 	"difyserver/database"
 	"difyserver/models"
+	"difyserver/services"
 	"difyserver/utils"
 	"encoding/base64"
 	"encoding/hex"
@@ -122,12 +123,47 @@ func AddTenant(c *gin.Context) {
 	tenant.ID = uuid.New().String()
 	tenant.CreatedAt = time.Now()
 	tenant.UpdatedAt = time.Now()
-	tenant.EncryptPublicKey = "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA6DgcAPwYgeVRla/LH/S9\n9TQ6MmQNZRO7PRilu8NdQxRO4UP9KvRaIE8Jv0TozcbvqyTx7rjYU5nQsEvbRh6s\ntoq3Id7+pF/rQZX1DWCsg9Tn9rCkwBdZLd4dA2/5I6AWYjMQtPf5XBFDfIf+hgBQ\ns8pSrmDO+g1LTD8qwcbx/VzsSR7SMxL7voPxByr5kUtyG+K80OkDl7ruddzdbUG3\nLF9VQvaiw7ocMVGN+FE/wvPPbtnTuQ1bkE0h771huTYGJ93kL9hd9SlpkYcLpUWP\nit/6tjkt7M8Z3DUJpdCMYeMjmaWuENBEKu8DFpehf7n3UoCo56Luqi4TNEkcG9Df\nuQIDAQAB\n-----END PUBLIC KEY-----"
+
+	// 生成 RSA 密钥对（私钥保存到 Dify storage，公钥写入数据库）
+	publicKey, err := services.GenerateKeyPair(tenant.ID)
+	if err != nil {
+		fmt.Printf("[AddTenant] 生成 RSA 密钥失败（将使用占位公钥）: %v\n", err)
+		tenant.EncryptPublicKey = "" // 留空，后续需要手动处理
+	} else {
+		tenant.EncryptPublicKey = publicKey
+	}
 
 	if result := database.DB.Create(&tenant); result.Error != nil {
 		c.JSON(500, gin.H{"error": result.Error.Error()})
 		return
 	}
+
+	// 自动将 Dify 管理员账号关联到新 tenant（owner 角色）
+	adminEmail := config.GlobalConfig.Dify.AdminEmail
+	if adminEmail != "" {
+		var adminAccount models.Account
+		if err := database.DB.Where("email = ?", adminEmail).First(&adminAccount).Error; err == nil {
+			join := models.TenantAccountJoin{
+				ID:        uuid.New().String(),
+				TenantID:  tenant.ID,
+				AccountID: adminAccount.ID,
+				Role:      "owner",
+				CreatedAt: time.Now(),
+				UpdatedAt: time.Now(),
+			}
+			if err := database.DB.Create(&join).Error; err != nil {
+				fmt.Printf("[AddTenant] 关联管理员账号失败: %v\n", err)
+			}
+		} else {
+			fmt.Printf("[AddTenant] 未找到管理员账号 %s: %v\n", adminEmail, err)
+		}
+	}
+
+	go func(tenantID string) {
+		if err := services.InstallDefaultPlugins(tenantID); err != nil {
+			fmt.Printf("[AddTenant] 为租户 %s 安装默认插件失败: %v\n", tenantID, err)
+		}
+	}(tenant.ID)
 
 	c.JSON(200, tenant)
 }
@@ -651,4 +687,96 @@ func hashPassword(password string, salt []byte) string {
 	dk := pbkdf2.Key([]byte(password), salt, 10000, 32, sha256.New)
 	// 转换为十六进制字符串
 	return hex.EncodeToString(dk)
+}
+
+// InstallPlugins 手动为指定租户安装插件
+func InstallPlugins(c *gin.Context) {
+	var req struct {
+		TenantID          string   `json:"tenant_id"`
+		PluginIdentifiers []string `json:"plugin_identifiers"` // 可选，为空则使用默认插件列表
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(400, gin.H{"error": err.Error()})
+		return
+	}
+
+	if req.TenantID == "" {
+		c.JSON(400, gin.H{"error": "tenant_id 不能为空"})
+		return
+	}
+
+	cfg := config.GlobalConfig.Dify
+	if cfg.ConsoleAPIURL == "" || cfg.AdminEmail == "" || cfg.AdminPassword == "" {
+		c.JSON(500, gin.H{"error": "Dify 配置不完整，请检查 config.yaml 中的 dify 配置项"})
+		return
+	}
+
+	// 确定要安装的插件列表
+	plugins := req.PluginIdentifiers
+	if len(plugins) == 0 {
+		plugins = cfg.DefaultPlugins
+	}
+	if len(plugins) == 0 {
+		c.JSON(400, gin.H{"error": "未指定要安装的插件，且未配置默认插件列表"})
+		return
+	}
+
+	client := services.NewDifyClient()
+
+	// 确保管理员账号已关联到目标 tenant
+	var adminAccount models.Account
+	if err := database.DB.Where("email = ?", cfg.AdminEmail).First(&adminAccount).Error; err == nil {
+		var count int64
+		database.DB.Model(&models.TenantAccountJoin{}).
+			Where("tenant_id = ? AND account_id = ?", req.TenantID, adminAccount.ID).
+			Count(&count)
+		if count == 0 {
+			join := models.TenantAccountJoin{
+				ID:        uuid.New().String(),
+				TenantID:  req.TenantID,
+				AccountID: adminAccount.ID,
+				Role:      "owner",
+				CreatedAt: time.Now(),
+				UpdatedAt: time.Now(),
+			}
+			database.DB.Create(&join)
+		}
+	}
+
+	// 登录（cookie + csrf token 自动管理）
+	if err := client.LoginToDify(cfg.AdminEmail, cfg.AdminPassword); err != nil {
+		c.JSON(500, gin.H{"error": fmt.Sprintf("登录 Dify 失败: %v", err)})
+		return
+	}
+
+	// 安装插件
+	result, err := client.InstallPluginsFromMarketplace(req.TenantID, plugins)
+	if err != nil {
+		c.JSON(500, gin.H{"error": fmt.Sprintf("安装插件失败: %v", err)})
+		return
+	}
+
+	c.JSON(200, gin.H{
+		"message":       "插件安装请求已提交",
+		"all_installed": result.AllInstalled,
+		"task_id":       result.TaskID,
+	})
+}
+
+// ListInstalledPlugins 查询指定 tenant 已安装的插件列表
+func ListInstalledPlugins(c *gin.Context) {
+	tenantID := c.Query("tenant_id")
+	if tenantID == "" {
+		c.JSON(400, gin.H{"error": "tenant_id 参数必填"})
+		return
+	}
+
+	var plugins []models.PluginInstallation
+	result := database.DB.Where("tenant_id = ?", tenantID).Find(&plugins)
+	if result.Error != nil {
+		c.JSON(500, gin.H{"error": result.Error.Error()})
+		return
+	}
+
+	c.JSON(200, gin.H{"data": plugins, "total": len(plugins)})
 }
