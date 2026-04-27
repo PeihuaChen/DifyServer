@@ -143,6 +143,8 @@ const TenantAccounts: React.FC = () => {
       title: '创建时间', 
       dataIndex: 'CreatedAt', 
       key: 'createdAt',
+      defaultSortOrder: 'descend' as const,
+      sorter: (a: TenantAccountJoin, b: TenantAccountJoin) => new Date(a.CreatedAt).getTime() - new Date(b.CreatedAt).getTime(),
       render: (text: string) => new Date(text).toLocaleString()
     },
     {

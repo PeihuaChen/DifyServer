@@ -93,7 +93,7 @@ func GetTenants(c *gin.Context) {
 	database.DB.Model(&models.Tenant{}).Count(&total)
 
 	// 获取分页数据
-	result := database.DB.Limit(limit).Offset(offset).Find(&tenants)
+	result := database.DB.Order("created_at DESC").Limit(limit).Offset(offset).Find(&tenants)
 	if result.Error != nil {
 		c.JSON(500, gin.H{"error": result.Error.Error()})
 		return
@@ -184,7 +184,7 @@ func GetDatasets(c *gin.Context) {
 	database.DB.Model(&models.Dataset{}).Count(&total)
 
 	// 获取分页数据
-	result := database.DB.Limit(limit).Offset(offset).Find(&datasets)
+	result := database.DB.Order("created_at DESC").Limit(limit).Offset(offset).Find(&datasets)
 	if result.Error != nil {
 		c.JSON(500, gin.H{"error": result.Error.Error()})
 		return
@@ -222,7 +222,7 @@ func ListDatasetTenant(c *gin.Context) {
 		query = query.Where("tenant_id = ?", tenantID)
 	}
 
-	result := query.Limit(limit).Offset(offset).Find(&datasets)
+	result := query.Order("created_at DESC").Limit(limit).Offset(offset).Find(&datasets)
 	if result.Error != nil {
 		c.JSON(500, gin.H{"error": result.Error.Error()})
 		return
@@ -290,7 +290,7 @@ func ListTenantAccount(c *gin.Context) {
 	database.DB.Model(&models.TenantAccountJoin{}).Count(&total)
 
 	// 获取分页数据
-	result := database.DB.Limit(limit).Offset(offset).Find(&joins)
+	result := database.DB.Order("created_at DESC").Limit(limit).Offset(offset).Find(&joins)
 	if result.Error != nil {
 		c.JSON(500, gin.H{"error": result.Error.Error()})
 		return
@@ -327,7 +327,7 @@ func ListTenantAccountByAccount(c *gin.Context) {
 	database.DB.Model(&models.TenantAccountJoin{}).Count(&total)
 
 	// 获取分页数据
-	result := database.DB.Where("account_id = ?", accountID).Limit(limit).Offset(offset).Find(&joins)
+	result := database.DB.Where("account_id = ?", accountID).Order("created_at DESC").Limit(limit).Offset(offset).Find(&joins)
 	if result.Error != nil {
 		c.JSON(500, gin.H{"error": result.Error.Error()})
 		return
@@ -362,7 +362,7 @@ func ListTenantAccountByTenant(c *gin.Context) {
 	database.DB.Model(&models.TenantAccountJoin{}).Count(&total)
 
 	// 获取分页数据
-	result := database.DB.Where("tenant_id = ?", tenantID).Limit(limit).Offset(offset).Find(&joins)
+	result := database.DB.Where("tenant_id = ?", tenantID).Order("created_at DESC").Limit(limit).Offset(offset).Find(&joins)
 	if result.Error != nil {
 		c.JSON(500, gin.H{"error": result.Error.Error()})
 		return

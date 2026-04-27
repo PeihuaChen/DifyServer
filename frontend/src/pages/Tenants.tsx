@@ -28,6 +28,8 @@ const Tenants: React.FC = () => {
       title: '创建时间', 
       dataIndex: 'CreatedAt', 
       key: 'created_at',
+      defaultSortOrder: 'descend' as const,
+      sorter: (a: Tenant, b: Tenant) => new Date(a.CreatedAt).getTime() - new Date(b.CreatedAt).getTime(),
       render: (text: string) => new Date(text).toLocaleString()
     },
     { 
