@@ -25,6 +25,7 @@ func GetAccounts(c *gin.Context) {
 	var total int64
 	pageStr := c.DefaultQuery("page", "1")
 	pageSizeStr := c.DefaultQuery("page_size", "10")
+	keyword := c.DefaultQuery("keyword", "")
 	page, _ := strconv.Atoi(pageStr)
 	limit, _ := strconv.Atoi(pageSizeStr)
 	if limit <= 0 {
@@ -32,11 +33,14 @@ func GetAccounts(c *gin.Context) {
 	}
 	offset := (page - 1) * limit
 
-	// 先获取总记录数
-	database.DB.Model(&models.Account{}).Count(&total)
+	query := database.DB.Model(&models.Account{})
+	if keyword != "" {
+		query = query.Where("name ILIKE ?", "%"+keyword+"%")
+	}
 
-	// 获取分页数据
-	result := database.DB.Limit(limit).Offset(offset).Find(&accounts)
+	query.Count(&total)
+
+	result := query.Limit(limit).Offset(offset).Find(&accounts)
 	if result.Error != nil {
 		c.JSON(500, gin.H{"error": result.Error.Error()})
 		return
@@ -173,6 +177,7 @@ func GetDatasets(c *gin.Context) {
 	var total int64
 	pageStr := c.DefaultQuery("page", "1")
 	pageSizeStr := c.DefaultQuery("page_size", "10")
+	keyword := c.DefaultQuery("keyword", "")
 	page, _ := strconv.Atoi(pageStr)
 	limit, _ := strconv.Atoi(pageSizeStr)
 	if limit <= 0 {
@@ -180,11 +185,14 @@ func GetDatasets(c *gin.Context) {
 	}
 	offset := (page - 1) * limit
 
-	// 先获取总记录数
-	database.DB.Model(&models.Dataset{}).Count(&total)
+	query := database.DB.Model(&models.Dataset{})
+	if keyword != "" {
+		query = query.Where("name ILIKE ?", "%"+keyword+"%")
+	}
 
-	// 获取分页数据
-	result := database.DB.Order("created_at DESC").Limit(limit).Offset(offset).Find(&datasets)
+	query.Count(&total)
+
+	result := query.Order("created_at DESC").Limit(limit).Offset(offset).Find(&datasets)
 	if result.Error != nil {
 		c.JSON(500, gin.H{"error": result.Error.Error()})
 		return
@@ -279,6 +287,7 @@ func ListTenantAccount(c *gin.Context) {
 	var total int64
 	pageStr := c.DefaultQuery("page", "1")
 	pageSizeStr := c.DefaultQuery("page_size", "10")
+	keyword := c.DefaultQuery("keyword", "")
 	page, _ := strconv.Atoi(pageStr)
 	limit, _ := strconv.Atoi(pageSizeStr)
 	if limit <= 0 {
@@ -286,11 +295,14 @@ func ListTenantAccount(c *gin.Context) {
 	}
 	offset := (page - 1) * limit
 
-	// 先获取总记录数
-	database.DB.Model(&models.TenantAccountJoin{}).Count(&total)
+	query := database.DB.Model(&models.TenantAccountJoin{})
+	if keyword != "" {
+		query = query.Where("account_id IN (SELECT id FROM accounts WHERE name ILIKE ?)", "%"+keyword+"%")
+	}
 
-	// 获取分页数据
-	result := database.DB.Order("created_at DESC").Limit(limit).Offset(offset).Find(&joins)
+	query.Count(&total)
+
+	result := query.Order("created_at DESC").Limit(limit).Offset(offset).Find(&joins)
 	if result.Error != nil {
 		c.JSON(500, gin.H{"error": result.Error.Error()})
 		return

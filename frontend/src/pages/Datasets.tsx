@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Table, Button, Modal, Form, Input, Select, message } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
+import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import { datasetApi, tenantApi } from '../services/api';
 import { Dataset, Tenant } from '../types/index';
 
@@ -20,11 +20,12 @@ const Datasets: React.FC = () => {
   });
   const paginationRef = React.useRef(pagination);
   paginationRef.current = pagination;
+  const [searchKeyword, setSearchKeyword] = useState('');
 
-  const fetchDatasets = React.useCallback(async (page: number = 1, pageSize: number = 10) => {
+  const fetchDatasets = React.useCallback(async (page: number = 1, pageSize: number = 10, keyword?: string) => {
     setLoading(true);
     try {
-      const response = await datasetApi.getDatasets(page, pageSize);
+      const response = await datasetApi.getDatasets(page, pageSize, keyword);
       setDatasets(response.data?.data || []);
       setPagination(prev => ({
         ...prev,
@@ -94,7 +95,7 @@ const Datasets: React.FC = () => {
       message.success('添加知识库成功');
       setVisible(false);
       form.resetFields();
-      fetchDatasets(paginationRef.current.current, paginationRef.current.pageSize);
+      fetchDatasets(paginationRef.current.current, paginationRef.current.pageSize, searchKeyword);
     } catch (error) {
       message.error('添加知识库失败');
     }
@@ -102,14 +103,26 @@ const Datasets: React.FC = () => {
 
   return (
     <div style={{ padding: 24 }}>
-      <Button
-        type="primary"
-        icon={<PlusOutlined />}
-        onClick={() => setVisible(true)}
-        style={{ marginBottom: 16 }}
-      >
-        添加知识库
-      </Button>
+      <div style={{ marginBottom: 16, display: 'flex', gap: 8 }}>
+        <Button
+          type="primary"
+          icon={<PlusOutlined />}
+          onClick={() => setVisible(true)}
+        >
+          添加知识库
+        </Button>
+        <Input.Search
+          placeholder="搜索知识库名称"
+          allowClear
+          enterButton={<SearchOutlined />}
+          style={{ width: 300 }}
+          onSearch={(value) => {
+            setSearchKeyword(value);
+            setPagination(prev => ({ ...prev, current: 1 }));
+            fetchDatasets(1, paginationRef.current.pageSize, value);
+          }}
+        />
+      </div>
 
       <Table
         columns={columns}
@@ -129,7 +142,7 @@ const Datasets: React.FC = () => {
               current: page,
               pageSize: pageSize || 10
             }));
-            fetchDatasets(page, pageSize || 10);
+            fetchDatasets(page, pageSize || 10, searchKeyword);
           }
         }}
       />

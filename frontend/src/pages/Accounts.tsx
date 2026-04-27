@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Table, Button, Modal, Form, Input, message } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
+import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import { accountApi } from '../services/api';
 import { Account } from '../types';
 
@@ -17,6 +17,7 @@ const Accounts: React.FC = () => {
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string>('');
   const [passwordForm] = Form.useForm();
+  const [searchKeyword, setSearchKeyword] = useState('');
   const paginationRef = React.useRef(pagination);
   paginationRef.current = pagination;
 
@@ -64,10 +65,10 @@ const Accounts: React.FC = () => {
     },
   ];
 
-  const fetchAccounts = React.useCallback(async (page: number = 1, pageSize: number = 10) => {
+  const fetchAccounts = React.useCallback(async (page: number = 1, pageSize: number = 10, keyword?: string) => {
     setLoading(true);
     try {
-      const response = await accountApi.getAccounts(page, pageSize);
+      const response = await accountApi.getAccounts(page, pageSize, keyword);
       setAccounts(response.data?.data || []);
       setPagination(prev => ({
         ...prev,
@@ -93,7 +94,7 @@ const Accounts: React.FC = () => {
       message.success('添加用户成功');
       setVisible(false);
       form.resetFields();
-      fetchAccounts(paginationRef.current.current, paginationRef.current.pageSize);
+      fetchAccounts(paginationRef.current.current, paginationRef.current.pageSize, searchKeyword);
     } catch (error) {
       message.error('添加用户失败');
     }
@@ -103,7 +104,7 @@ const Accounts: React.FC = () => {
     try {
       await accountApi.deleteAccount(id);
       message.success('删除用户成功');
-      fetchAccounts(paginationRef.current.current, paginationRef.current.pageSize);
+      fetchAccounts(paginationRef.current.current, paginationRef.current.pageSize, searchKeyword);
     } catch (error) {
       message.error('删除用户失败');
     }
@@ -111,14 +112,26 @@ const Accounts: React.FC = () => {
 
   return (
     <div style={{ padding: 24 }}>
-      <Button
-        type="primary"
-        icon={<PlusOutlined />}
-        onClick={() => setVisible(true)}
-        style={{ marginBottom: 16 }}
-      >
-        添加用户
-      </Button>
+      <div style={{ marginBottom: 16, display: 'flex', gap: 8 }}>
+        <Button
+          type="primary"
+          icon={<PlusOutlined />}
+          onClick={() => setVisible(true)}
+        >
+          添加用户
+        </Button>
+        <Input.Search
+          placeholder="搜索用户名称"
+          allowClear
+          enterButton={<SearchOutlined />}
+          style={{ width: 300 }}
+          onSearch={(value) => {
+            setSearchKeyword(value);
+            setPagination(prev => ({ ...prev, current: 1 }));
+            fetchAccounts(1, paginationRef.current.pageSize, value);
+          }}
+        />
+      </div>
 
       <Table
         columns={columns}
@@ -138,7 +151,7 @@ const Accounts: React.FC = () => {
               current: page,
               pageSize: pageSize || 10
             }));
-            fetchAccounts(page, pageSize || 10);
+            fetchAccounts(page, pageSize || 10, searchKeyword);
           }
         }}
       />

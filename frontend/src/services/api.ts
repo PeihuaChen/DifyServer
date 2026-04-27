@@ -30,8 +30,8 @@ api.interceptors.response.use(
 export const accountApi = {
     login: (data: { email: string; password: string }) =>
         api.post('/login.json', data),
-    getAccounts: (page: number, pageSize: number = 10) =>
-        api.get('/accounts.json', { params: { page, page_size: pageSize } }),
+    getAccounts: (page: number, pageSize: number = 10, keyword?: string) =>
+        api.get('/accounts.json', { params: { page, page_size: pageSize, keyword: keyword || undefined } }),
     addAccount: (data: { name: string; email: string }) =>
         api.post('/add_account.json', data),
     deleteAccount: (id: string) =>
@@ -57,8 +57,8 @@ export const tenantApi = {
 };
 
 export const datasetApi = {
-    getDatasets: (page: number, pageSize: number = 10) =>
-        api.get('/datasets.json', { params: { page, page_size: pageSize } }),
+    getDatasets: (page: number, pageSize: number = 10, keyword?: string) =>
+        api.get('/datasets.json', { params: { page, page_size: pageSize, keyword: keyword || undefined } }),
     addDataset: (data: {
         name: string;
         description: string;
@@ -76,8 +76,8 @@ export const datasetApi = {
 };
 
 export const tenantAccountApi = {
-    listTenantAccounts: (page: number, pageSize: number = 10) =>
-        api.get('/list_tenant_account.json', { params: { page, page_size: pageSize } }),
+    listTenantAccounts: (page: number, pageSize: number = 10, keyword?: string) =>
+        api.get('/list_tenant_account.json', { params: { page, page_size: pageSize, keyword: keyword || undefined } }),
     listByAccount: (accountId: string, page: number) =>
         api.get('/list_tenant_account_by_account.json', { params: { account_id: accountId, page } }),
     listByTenant: (tenantId: string, page: number) =>

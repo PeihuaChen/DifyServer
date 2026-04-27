@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Button, Modal, Form, Select, message } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
+import { Table, Button, Modal, Form, Input, Select, message } from 'antd';
+import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import { tenantAccountApi, accountApi, tenantApi } from '../services/api';
 import { TenantAccountJoin, Account, Tenant } from '../types';
 
@@ -28,11 +28,12 @@ const TenantAccounts: React.FC = () => {
   });
   const paginationRef = React.useRef(pagination);
   paginationRef.current = pagination;
+  const [searchKeyword, setSearchKeyword] = useState('');
 
-  const fetchJoins = React.useCallback(async (page: number = 1, pageSize: number = 10) => {
+  const fetchJoins = React.useCallback(async (page: number = 1, pageSize: number = 10, keyword?: string) => {
     setLoading(true);
     try {
-      const response = await tenantAccountApi.listTenantAccounts(page, pageSize);
+      const response = await tenantAccountApi.listTenantAccounts(page, pageSize, keyword);
       setJoins(response.data?.data || []);
       setPagination(prev => ({
         ...prev,
@@ -172,7 +173,7 @@ const TenantAccounts: React.FC = () => {
       message.success('添加关联关系成功');
       setVisible(false);
       form.resetFields();
-      fetchJoins(paginationRef.current.current, paginationRef.current.pageSize);
+      fetchJoins(paginationRef.current.current, paginationRef.current.pageSize, searchKeyword);
     } catch (error) {
       message.error('添加关联关系失败');
     }
@@ -182,7 +183,7 @@ const TenantAccounts: React.FC = () => {
     try {
       await tenantAccountApi.deleteTenantAccount(accountId, tenantId);
       message.success('删除关联关系成功');
-      fetchJoins(paginationRef.current.current, paginationRef.current.pageSize);
+      fetchJoins(paginationRef.current.current, paginationRef.current.pageSize, searchKeyword);
     } catch (error) {
       message.error('删除关联关系失败');
     }
@@ -197,7 +198,7 @@ const TenantAccounts: React.FC = () => {
         role: newRole
       });
       message.success('更新角色成功');
-      fetchJoins(paginationRef.current.current, paginationRef.current.pageSize);
+      fetchJoins(paginationRef.current.current, paginationRef.current.pageSize, searchKeyword);
     } catch (error) {
       message.error('更新角色失败');
     }
@@ -205,14 +206,26 @@ const TenantAccounts: React.FC = () => {
 
   return (
     <div style={{ padding: 24 }}>
-      <Button
-        type="primary"
-        icon={<PlusOutlined />}
-        onClick={() => setVisible(true)}
-        style={{ marginBottom: 16 }}
-      >
-        添加关联关系
-      </Button>
+      <div style={{ marginBottom: 16, display: 'flex', gap: 8 }}>
+        <Button
+          type="primary"
+          icon={<PlusOutlined />}
+          onClick={() => setVisible(true)}
+        >
+          添加关联关系
+        </Button>
+        <Input.Search
+          placeholder="搜索用户名称"
+          allowClear
+          enterButton={<SearchOutlined />}
+          style={{ width: 300 }}
+          onSearch={(value) => {
+            setSearchKeyword(value);
+            setPagination(prev => ({ ...prev, current: 1 }));
+            fetchJoins(1, paginationRef.current.pageSize, value);
+          }}
+        />
+      </div>
 
       <Table
         columns={columns}
@@ -232,7 +245,7 @@ const TenantAccounts: React.FC = () => {
               current: page,
               pageSize: pageSize || 10
             }));
-            fetchJoins(page, pageSize || 10);
+            fetchJoins(page, pageSize || 10, searchKeyword);
           }
         }}
       />
