@@ -100,14 +100,23 @@ const Accounts: React.FC = () => {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    try {
-      await accountApi.deleteAccount(id);
-      message.success('删除用户成功');
-      fetchAccounts(paginationRef.current.current, paginationRef.current.pageSize, searchKeyword);
-    } catch (error) {
-      message.error('删除用户失败');
-    }
+  const handleDelete = (id: string) => {
+    Modal.confirm({
+      title: '确认删除',
+      content: '确定要删除该用户吗？删除后无法恢复。',
+      okText: '确定',
+      cancelText: '取消',
+      okType: 'danger',
+      onOk: async () => {
+        try {
+          await accountApi.deleteAccount(id);
+          message.success('删除用户成功');
+          fetchAccounts(paginationRef.current.current, paginationRef.current.pageSize, searchKeyword);
+        } catch (error) {
+          message.error('删除用户失败');
+        }
+      },
+    });
   };
 
   return (

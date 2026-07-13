@@ -179,14 +179,23 @@ const TenantAccounts: React.FC = () => {
     }
   };
 
-  const handleDelete = async (tenantId: string, accountId: string) => {
-    try {
-      await tenantAccountApi.deleteTenantAccount(accountId, tenantId);
-      message.success('删除关联关系成功');
-      fetchJoins(paginationRef.current.current, paginationRef.current.pageSize, searchKeyword);
-    } catch (error) {
-      message.error('删除关联关系失败');
-    }
+  const handleDelete = (tenantId: string, accountId: string) => {
+    Modal.confirm({
+      title: '确认删除',
+      content: '确定要删除该关联关系吗？删除后无法恢复。',
+      okText: '确定',
+      cancelText: '取消',
+      okType: 'danger',
+      onOk: async () => {
+        try {
+          await tenantAccountApi.deleteTenantAccount(accountId, tenantId);
+          message.success('删除关联关系成功');
+          fetchJoins(paginationRef.current.current, paginationRef.current.pageSize, searchKeyword);
+        } catch (error) {
+          message.error('删除关联关系失败');
+        }
+      },
+    });
   };
 
   // 添加角色更改处理函数
