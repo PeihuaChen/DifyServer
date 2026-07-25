@@ -15,6 +15,12 @@ type Config struct {
 		DBName   string `yaml:"dbname"`
 	} `yaml:"database"`
 	Admins []string `yaml:"admins"` // 添加管理员邮箱列表
+	Redis  struct {
+		Host     string `yaml:"host"`
+		Port     int    `yaml:"port"`
+		Password string `yaml:"password"`
+		DB       int    `yaml:"db"`
+	} `yaml:"redis"` // Dify 使用的 Redis（用于清除登录失败限流计数）
 	Dify   struct {
 		ConsoleAPIURL  string   `yaml:"console_api_url"`
 		AdminEmail     string   `yaml:"admin_email"`

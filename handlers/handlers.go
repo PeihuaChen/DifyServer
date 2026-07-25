@@ -609,6 +609,15 @@ func SetAccountPassword(c *gin.Context) {
 		return
 	}
 
+	// 清除 Dify 登录失败限流计数，否则账号可能仍处于
+	// "Too many incorrect password attempts" 锁定状态，导致新密码也无法登录
+	if err := services.ClearLoginErrorRateLimit(account.Email); err != nil {
+		// 不阻塞密码重置流程，仅提示
+		fmt.Printf("[SetAccountPassword] 清除登录限流计数失败: %v\n", err)
+		c.JSON(200, gin.H{"message": "设置密码成功，但清除登录限流计数失败，若登录仍被锁定请稍后重试或手动清除 Redis 计数"})
+		return
+	}
+
 	c.JSON(200, gin.H{"message": "设置密码成功"})
 }
 
