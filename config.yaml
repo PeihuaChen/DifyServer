@@ -10,6 +10,13 @@ admins:
   - "admin2@example.com"
   - "admin3@example.com"
 
+# Dify 使用的 Redis 配置（用于在重置密码后清除登录失败限流计数）
+redis:
+  host: "x.x.x.x"
+  port: 6379
+  password: "difyai123456"
+  db: 0
+
 # Dify Console API 配置（用于调用插件安装等接口）
 dify:
   console_api_url: "http://x.x.x.x:5001"  # Dify API 服务地址
