@@ -26,10 +26,10 @@ dify:
   # 格式: org/name:version@hash，可从已有 workspace 的插件安装记录中获取
   default_plugins:
     - "langgenius/openai_api_compatible:0.0.42@cf508badd3f6c086c137a6034697e0c48a60038783b3c3ed0af2fe55000842e8"
-  # Dify storage 路径（Docker volume 映射到宿主机的路径）
-  storage_path: "映射到宿主机的路径/dify/docker/volumes/app/storage"
-  # SSH 配置（用于远程写入 RSA 私钥到 Dify 服务器）
-  ssh_host: "x.x.x.x"
-  ssh_port: 22
-  ssh_user: "username"      # 填写 SSH 用户名
-  ssh_password: "userpwd"  # 填写 SSH 密码
+  # Dify 内部接口（Inner API）配置，用于通过官方接口创建工作空间
+  # 前提条件：
+  #   1. 在 Dify api 服务增加环境变量：INNER_API=true、INNER_API_KEY=sk-***
+  #   2. NGINX 增加 /inner/api 路由：
+  #      location /inner/api { proxy_pass http://api:5001; include proxy.conf; }
+  inner_api_url: "http://x.x.x.x"              # Dify 服务地址（只需 base URL，代码会自动拼接路由），留空则使用 console_api_url
+  inner_api_key: "sk-***"              # 需与 api 服务的 INNER_API_KEY 环境变量保持一致，如 sk-***
