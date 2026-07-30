@@ -26,11 +26,8 @@ type Config struct {
 		AdminEmail     string   `yaml:"admin_email"`
 		AdminPassword  string   `yaml:"admin_password"`
 		DefaultPlugins []string `yaml:"default_plugins"`
-		StoragePath    string   `yaml:"storage_path"`  // Dify storage 路径
-		SSHHost        string   `yaml:"ssh_host"`      // SSH 主机地址（远程写入私钥用）
-		SSHPort        int      `yaml:"ssh_port"`      // SSH 端口
-		SSHUser        string   `yaml:"ssh_user"`      // SSH 用户名
-		SSHPassword    string   `yaml:"ssh_password"`  // SSH 密码
+		InnerAPIURL    string   `yaml:"inner_api_url"`  // Dify 内部接口地址（留空则使用 console_api_url）
+		InnerAPIKey    string   `yaml:"inner_api_key"`  // Dify 内部接口密钥（对应 api 服务的 INNER_API_KEY 环境变量）
 	} `yaml:"dify"`
 }
 

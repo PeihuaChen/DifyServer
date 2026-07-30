@@ -124,52 +124,69 @@ func AddTenant(c *gin.Context) {
 		return
 	}
 
-	tenant.ID = uuid.New().String()
-	tenant.CreatedAt = time.Now()
-	tenant.UpdatedAt = time.Now()
-
-	// 生成 RSA 密钥对（私钥保存到 Dify storage，公钥写入数据库）
-	publicKey, err := services.GenerateKeyPair(tenant.ID)
-	if err != nil {
-		fmt.Printf("[AddTenant] 生成 RSA 密钥失败（将使用占位公钥）: %v\n", err)
-		tenant.EncryptPublicKey = "" // 留空，后续需要手动处理
-	} else {
-		tenant.EncryptPublicKey = publicKey
-	}
-
-	if result := database.DB.Create(&tenant); result.Error != nil {
-		c.JSON(500, gin.H{"error": result.Error.Error()})
+	if tenant.Name == "" {
+		c.JSON(400, gin.H{"error": "工作空间名称不能为空"})
 		return
 	}
 
-	// 自动将 Dify 管理员账号关联到新 tenant（owner 角色）
-	adminEmail := config.GlobalConfig.Dify.AdminEmail
-	if adminEmail != "" {
-		var adminAccount models.Account
-		if err := database.DB.Where("email = ?", adminEmail).First(&adminAccount).Error; err == nil {
-			join := models.TenantAccountJoin{
-				ID:        uuid.New().String(),
-				TenantID:  tenant.ID,
-				AccountID: adminAccount.ID,
-				Role:      "owner",
-				CreatedAt: time.Now(),
-				UpdatedAt: time.Now(),
+	// 通过 Dify 内部接口(Inner API) 创建工作空间。
+	// Dify 会在共享数据库中创建 tenant、生成加密公钥并关联 owner。
+	// 接口不通时返回带有环境变量/NGINX 配置提示的错误。
+	//
+	// 兼容两种接口：
+	//   1. 配置了管理员邮箱(dify.admin_email) 时优先使用 /inner/api/enterprise/workspace
+	//      （需要 owner 账号已存在），失败时回退到无 owner 接口；
+	//   2. 未配置管理员邮箱时直接使用 /inner/api/enterprise/workspace/ownerless。
+	client := services.NewDifyClient()
+	ownerEmail := config.GlobalConfig.Dify.AdminEmail
+
+	var tenantID string
+	var err error
+	if ownerEmail != "" {
+		tenantID, err = client.CreateWorkspace(tenant.Name, ownerEmail)
+		if err != nil {
+			// owner 账号不存在等情况下，回退到无 owner 创建方式
+			fmt.Printf("[AddTenant] 基于 owner 创建工作空间失败，回退到无 owner 方式: %v\n", err)
+			var fallbackErr error
+			tenantID, fallbackErr = client.CreateWorkspaceOwnerless(tenant.Name)
+			if fallbackErr != nil {
+				// 两种方式都失败，返回原始错误与回退错误
+				c.JSON(500, gin.H{"error": fmt.Sprintf("%v；无 owner 回退也失败: %v", err, fallbackErr)})
+				return
 			}
-			if err := database.DB.Create(&join).Error; err != nil {
-				fmt.Printf("[AddTenant] 关联管理员账号失败: %v\n", err)
-			}
-		} else {
-			fmt.Printf("[AddTenant] 未找到管理员账号 %s: %v\n", adminEmail, err)
+		}
+	} else {
+		tenantID, err = client.CreateWorkspaceOwnerless(tenant.Name)
+		if err != nil {
+			c.JSON(500, gin.H{"error": err.Error()})
+			return
 		}
 	}
 
-	go func(tenantID string) {
-		if err := services.InstallDefaultPlugins(tenantID); err != nil {
-			fmt.Printf("[AddTenant] 为租户 %s 安装默认插件失败: %v\n", tenantID, err)
+	// 若前端指定了 plan，则更新到已创建的 tenant（Inner API 仅设置 name）
+	if tenant.Plan != "" {
+		if err := database.DB.Model(&models.Tenant{}).Where("id = ?", tenantID).
+			Update("plan", tenant.Plan).Error; err != nil {
+			fmt.Printf("[AddTenant] 更新 tenant %s 的 plan 失败: %v\n", tenantID, err)
 		}
-	}(tenant.ID)
+	}
 
-	c.JSON(200, tenant)
+	// 异步为新工作空间安装默认插件
+	go func(id string) {
+		if err := services.InstallDefaultPlugins(id); err != nil {
+			fmt.Printf("[AddTenant] 为租户 %s 安装默认插件失败: %v\n", id, err)
+		}
+	}(tenantID)
+
+	// 读取创建后的 tenant 返回给前端
+	var created models.Tenant
+	if err := database.DB.Where("id = ?", tenantID).First(&created).Error; err != nil {
+		// 回退：至少返回 id 和 name
+		c.JSON(200, gin.H{"ID": tenantID, "Name": tenant.Name})
+		return
+	}
+
+	c.JSON(200, created)
 }
 
 func GetDatasets(c *gin.Context) {
